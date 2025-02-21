@@ -14,14 +14,14 @@ body
 	font-family: 'Open Sans', sans-serif;
 }
 
-.form-control{color: purple;}
+.form-control{color:#BDFEF2;}
 
 #wrapper
 {
 	width:100%;
 	float:left;
 }
-.inner-content i{color: white;
+.inner-content i{color: blue;
     font-size: 20px;
     border: 2px solid #fff;
     padding: 6px 20px;
