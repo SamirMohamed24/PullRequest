@@ -58,9 +58,10 @@ button {
 
 }
 .search{ float: right;}
-.search1 i, .search i{    position: absolute;
+.search1 i, .search i{    
+    position: absolute;
     margin: 14px 12px;
-    color: #BDFEF2;
+    color: blue;
     cursor: pointer;
 }
 .search1 input,
@@ -121,7 +122,7 @@ ul.navbar-nav {
 }
 .mobile-togle{display:none;}
 .navbar-nav>li a:hover
-{color:##528C81;}
+{color:#528C81;}
 .banner {
     clear: both;
     position: relative;
@@ -160,7 +161,7 @@ color: #fff;line-height: 45px;
 
     text-align: center;
     margin: 10px 0px;
-    background-color: background-color: #51B5B1;
+    background-color: background-color #51B5B1;
     background-color: #51B5B1;
     border-radius: 40px;
     padding: 10px 40px;
@@ -423,7 +424,7 @@ padding: 20px 0px;}
 {
 	background:transparent !important;
 	border:0px;
-	background-color:transparent ~important;
+	background-color:transparent important;
 }
 nav.navbar
 {
@@ -579,7 +580,7 @@ margin:30px 0px 0px 0px;
 {
 	background:transparent !important;
 	border:0px;
-	background-color:transparent ~important;
+	background-color:transparent important;
 }
 nav.navbar
 {
