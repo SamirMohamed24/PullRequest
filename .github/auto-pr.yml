@@ -1,0 +1,38 @@
+name: Auto Merge to Main
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+on:
+  push:
+    branches:
+      - feature-*
+  workflow_dispatch:
+
+jobs:
+  merge-to-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+
+      - name: Fetch feature branch
+        run: |
+          git fetch origin ${{ github.ref_name }}
+
+      - name: Merge feature branch into main
+        run: |
+          git merge --no-ff origin/${{ github.ref_name }} -m "Automated merge of ${{ github.ref_name }} into main"
+
+      - name: Push changes to main
+        run: |
+          git push origin main
