@@ -8,7 +8,7 @@ permissions:
 on:
   push:
     branches:
-      - main  # Trigger workflow when changes are pushed to main
+      - main  # Trigger workflow when pushing to main
   workflow_dispatch:
 
 jobs:
@@ -20,38 +20,28 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          ref: main  # Ensures we are on the main branch
+          ref: main
 
-      - name: Configure Git User  # ✅ Fix for "Please tell me who you are" error
+      - name: Set up Git user
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+      - name: Fetch all branches
+        run: git fetch --all
 
       - name: Check if auto-pr-branch exists
         id: check_branch
         run: |
           if git ls-remote --heads origin auto-pr-branch | grep -q "auto-pr-branch"; then
             echo "Branch auto-pr-branch exists, checking out..."
-            git checkout auto-pr-branch
+            git checkout -t origin/auto-pr-branch
             git pull origin auto-pr-branch
           else
             echo "Branch auto-pr-branch does not exist, creating it..."
             git checkout -b auto-pr-branch
             git push origin auto-pr-branch
           fi
-
-      - name: Ensure auto-pr-branch is up-to-date
-        run: |
-          git checkout auto-pr-branch
-          git pull origin main
-          git push origin auto-pr-branch
-
-      - name: Make a small change to force PR creation
-        run: |
-          echo "Trigger PR $(date)" > dummy.txt
-          git add dummy.txt
-          git commit -m "Trigger PR creation workflow"
-          git push origin auto-pr-branch
 
       - name: Create Pull Request
         id: create_pr
@@ -62,11 +52,8 @@ jobs:
           branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
           body: "This PR is automatically created to update main via an intermediate branch."
-          delete-branch: false  # Keep PR open until merged
-          draft: false  # Ensure PR is ready for review
-
-      - name: Debug PR Number
-        run: echo "PR Number is ${{ steps.create_pr.outputs.pull-request-number }}"
+          delete-branch: true
+          draft: false  # Ensure PR is not in draft mode
 
   approve-pr:
     runs-on: ubuntu-latest
