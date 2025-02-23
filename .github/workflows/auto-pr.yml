@@ -21,37 +21,30 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: main
-          fetch-depth: 0  # Ensure all branches are fetched
 
       - name: Configure Git
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-      - name: Fetch all branches
-        run: |
-          git fetch --all  # Ensure we fetch all remote branches
-
       - name: Ensure auto-pr-branch exists
         run: |
-          # Check if auto-pr-branch exists in remote
           if git ls-remote --heads origin auto-pr-branch | grep -q "auto-pr-branch"; then
             echo "Branch auto-pr-branch exists, checking out..."
-            git checkout -b auto-pr-branch origin/auto-pr-branch  # Create local tracking branch
+            git checkout auto-pr-branch
+            git pull origin auto-pr-branch
           else
             echo "Branch auto-pr-branch does not exist, creating it..."
             git checkout -b auto-pr-branch
             git push origin auto-pr-branch
           fi
 
-      - name: Sync main changes into auto-pr-branch
+      - name: Sync auto-pr-branch with main
         run: |
           git checkout auto-pr-branch
-          git pull origin main --rebase  # Merge latest main changes
-          echo "Syncing main changes $(date)" > .pr-sync.txt
-          git add .pr-sync.txt
-          git commit -m "Automated: Sync main to auto-pr-branch" || echo "No new changes to commit"
-          git push origin auto-pr-branch --force
+          git pull origin main
+          git merge origin/main --no-edit
+          git push origin auto-pr-branch
 
       - name: Create Pull Request
         id: create_pr
@@ -68,18 +61,16 @@ jobs:
   approve-pr:
     needs: create-pull-request
     runs-on: ubuntu-latest
-    if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Approve Pull Request
         uses: juliangruber/approve-pull-request-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.APPROVER_DEMO }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
 
   merge-pr:
     needs: approve-pr
     runs-on: ubuntu-latest
-    if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Merge Pull Request
         uses: juliangruber/merge-pull-request-action@v1
