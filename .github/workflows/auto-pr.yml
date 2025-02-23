@@ -22,6 +22,11 @@ jobs:
         with:
           ref: main  # Ensures we are on the main branch
 
+      - name: Configure Git User  # ✅ Fix for "Please tell me who you are" error
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Check if auto-pr-branch exists
         id: check_branch
         run: |
