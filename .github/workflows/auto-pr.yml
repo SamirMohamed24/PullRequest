@@ -8,7 +8,7 @@ permissions:
 on:
   push:
     branches:
-      - main  # Trigger workflow when pushing to main
+      - main
   workflow_dispatch:
 
 jobs:
@@ -64,7 +64,7 @@ jobs:
           branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
           body: "This PR is automatically created to update main via an intermediate branch."
-          delete-branch: true
+          delete-branch: false  # Prevent premature deletion
           draft: false  # Ensure PR is not in draft mode
 
   approve-pr:
