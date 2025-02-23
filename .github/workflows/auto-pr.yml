@@ -1,4 +1,5 @@
-name: Auto Merge to Main
+name: Create Pull Request
+
 permissions:
   contents: write
   pull-requests: write
@@ -11,28 +12,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  merge-to-main:
+  create-pull-request:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main branch
+      - name: Checkout feature branch
         uses: actions/checkout@v3
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Git
-        run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "github-actions"
-
-      - name: Fetch feature branch
-        run: |
-          git fetch origin ${{ github.ref_name }}
-
-      - name: Merge feature branch into main
-        run: |
-          git merge --no-ff origin/${{ github.ref_name }} -m "Automated merge of ${{ github.ref_name }} into main"
-
-      - name: Push changes to main
-        run: |
-          git push origin main
+          base: main
+          branch: ${{ github.ref_name }}
+          title: "Merge ${{ github.ref_name }} into main"
+          body: "This pull request has been automatically generated to merge changes from the feature branch into main."
