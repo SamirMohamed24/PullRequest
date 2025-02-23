@@ -22,20 +22,28 @@ jobs:
         with:
           ref: main
 
-      - name: Create or Update auto-pr-branch
+      - name: Configure Git
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          # Check if auto-pr-branch exists
+      - name: Ensure auto-pr-branch exists
+        run: |
+          # Check if auto-pr-branch exists in remote
           if git ls-remote --heads origin auto-pr-branch | grep -q "auto-pr-branch"; then
+            echo "Branch auto-pr-branch exists, checking out..."
             git checkout auto-pr-branch
-            git pull origin main --rebase  # Rebase auto-pr-branch on latest main
+            git pull origin auto-pr-branch
           else
+            echo "Branch auto-pr-branch does not exist, creating it..."
             git checkout -b auto-pr-branch
+            git push origin auto-pr-branch
           fi
 
-          # Ensure there's a new commit (if needed)
+      - name: Sync main changes into auto-pr-branch
+        run: |
+          git checkout auto-pr-branch
+          git pull origin main --rebase  # Merge latest main changes
           echo "Syncing main changes $(date)" > .pr-sync.txt
           git add .pr-sync.txt
           git commit -m "Automated: Sync main to auto-pr-branch" || echo "No new changes to commit"
@@ -50,7 +58,7 @@ jobs:
           branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
           body: "This PR is automatically created to update main via an intermediate branch."
-          delete-branch: true  # Deletes auto-pr-branch after merging
+          delete-branch: true
           draft: false
 
   approve-pr:
