@@ -8,7 +8,7 @@ permissions:
 on:
   push:
     branches:
-      - main  # Trigger workflow when pushing to main
+      - main  # Trigger workflow when changes are pushed to main
   workflow_dispatch:
 
 jobs:
@@ -20,14 +20,10 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          ref: main
+          ref: main  # Ensures we are on the main branch
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-
-      - name: Ensure auto-pr-branch exists
+      - name: Check if auto-pr-branch exists
+        id: check_branch
         run: |
           if git ls-remote --heads origin auto-pr-branch | grep -q "auto-pr-branch"; then
             echo "Branch auto-pr-branch exists, checking out..."
@@ -39,11 +35,17 @@ jobs:
             git push origin auto-pr-branch
           fi
 
-      - name: Sync auto-pr-branch with main
+      - name: Ensure auto-pr-branch is up-to-date
         run: |
           git checkout auto-pr-branch
           git pull origin main
-          git merge origin/main --no-edit
+          git push origin auto-pr-branch
+
+      - name: Make a small change to force PR creation
+        run: |
+          echo "Trigger PR $(date)" > dummy.txt
+          git add dummy.txt
+          git commit -m "Trigger PR creation workflow"
           git push origin auto-pr-branch
 
       - name: Create Pull Request
@@ -55,12 +57,16 @@ jobs:
           branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
           body: "This PR is automatically created to update main via an intermediate branch."
-          delete-branch: true
-          draft: false
+          delete-branch: false  # Keep PR open until merged
+          draft: false  # Ensure PR is ready for review
+
+      - name: Debug PR Number
+        run: echo "PR Number is ${{ steps.create_pr.outputs.pull-request-number }}"
 
   approve-pr:
-    needs: create-pull-request
     runs-on: ubuntu-latest
+    needs: create-pull-request
+    if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Approve Pull Request
         uses: juliangruber/approve-pull-request-action@v1
@@ -69,8 +75,9 @@ jobs:
           number: ${{ needs.create-pull-request.outputs.pr_number }}
 
   merge-pr:
-    needs: approve-pr
     runs-on: ubuntu-latest
+    needs: approve-pr
+    if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Merge Pull Request
         uses: juliangruber/merge-pull-request-action@v1
