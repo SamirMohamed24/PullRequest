@@ -14,7 +14,7 @@ on:
 
 jobs:
   create-pull-request:
-    runs-on: ubuntu-latest  
+    runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
     steps:
@@ -44,23 +44,18 @@ jobs:
             git push origin auto-pr-branch
           fi
 
-      - name: Ensure changes exist (Dummy Commit if needed)
+      - name: Ensure changes exist (Force Dummy Commit)
         run: |
-          if git diff --quiet origin/main..auto-pr-branch; then
-            echo "No changes detected, making a dummy commit."
-            echo "Triggering PR - $(date)" >> .pr-trigger-file
-            git add .pr-trigger-file
-            git commit -m "Trigger PR - $(date)"
-            git push origin auto-pr-branch
-          else
-            echo "Changes detected, proceeding with PR creation."
-          fi
+          echo "Triggering PR - $(date)" >> .pr-trigger-file
+          git add .pr-trigger-file
+          git commit -m "Trigger PR - $(date)" || echo "No changes to commit"
+          git push origin auto-pr-branch
 
       - name: Create Pull Request
         id: create_pr
         uses: peter-evans/create-pull-request@v4
         with:
-          token: ${{ secrets.APPROVER_DEMO }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           base: main
           branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
@@ -69,7 +64,7 @@ jobs:
           draft: false
 
       - name: Debug PR Number
-        run: 'echo "PR Number: ${{ steps.create_pr.outputs.pull-request-number }}"'
+        run: 'echo "PR Number is: ${{ steps.create_pr.outputs.pull-request-number }}"'
 
   approve-pr:
     runs-on: ubuntu-latest
@@ -79,7 +74,7 @@ jobs:
       - name: Approve Pull Request
         uses: juliangruber/approve-pull-request-action@v1
         with:
-          github-token: ${{ secrets.APPROVER_DEMO }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
 
   merge-pr:
@@ -90,6 +85,6 @@ jobs:
       - name: Merge Pull Request
         uses: juliangruber/merge-pull-request-action@v1
         with:
-          github-token: ${{ secrets.APPROVER_DEMO }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
           method: squash
