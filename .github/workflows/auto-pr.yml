@@ -8,7 +8,7 @@ permissions:
 on:
   push:
     branches:
-      - main  # Trigger workflow when pushing to main
+      - main  # Trigger workflow on push to main
   workflow_dispatch:
 
 jobs:
@@ -20,41 +20,41 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          ref: main  # Ensuring it checks out the main branch
+          ref: main
 
-      - name: Create a new branch for the PR
+      - name: Create a new branch for PR
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git checkout -b auto-pr-branch
-          git push origin auto-pr-branch
+          git checkout -b auto-pr-branch || git checkout auto-pr-branch
+          git push origin auto-pr-branch --force
 
-      - name: Create Pull Request
+      - name: Create Pull Request (Always)
         id: create_pr
         uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: auto-pr-branch  # Using the newly created branch
+          branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
           body: "This PR is automatically created to update main via an intermediate branch."
-          delete-branch: true  # Deletes auto-pr-branch after merging
-          draft: false  # Ensure PR is ready for review
+          delete-branch: false  # Keep the branch for debugging
+          draft: false  # PR is not in draft mode
 
   approve-pr:
-    needs: create-pull-request
     runs-on: ubuntu-latest
+    needs: create-pull-request
     if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Approve Pull Request
         uses: juliangruber/approve-pull-request-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.APPROVER_DEMO }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
 
   merge-pr:
-    needs: approve-pr
     runs-on: ubuntu-latest
+    needs: approve-pr
     if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Merge Pull Request
@@ -62,4 +62,4 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
-          method: squash  # Uses squash merging to maintain a clean history
+          method: squash
