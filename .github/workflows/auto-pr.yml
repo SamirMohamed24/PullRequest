@@ -8,19 +8,24 @@ permissions:
 on:
   push:
     branches:
-      - feature-new-color
+      - main  # Trigger workflow when pushing to main
   workflow_dispatch:
 
 jobs:
   create-pull-request:
     runs-on: ubuntu-latest
-    outputs:
-      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
     steps:
-      - name: Checkout feature branch
+      - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref_name }}
+          ref: main  # Ensuring it checks out the main branch
+
+      - name: Create a new branch for the PR
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git checkout -b auto-pr-branch
+          git push origin auto-pr-branch
 
       - name: Create Pull Request
         id: create_pr
@@ -28,31 +33,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: ${{ github.ref_name }}
-          title: "Merge ${{ github.ref_name }} into main"
-          body: "This pull request has been automatically generated to merge changes from the feature branch into main."
-          delete-branch: true  # Deletes the branch after merging to keep repo clean
-          draft: false  # Ensure PR is not in draft mode
+          branch: auto-pr-branch  # Using the newly created branch
+          title: "Auto PR: Sync main changes"
+          body: "This PR is automatically created to update main via an intermediate branch."
+          delete-branch: true  # Deletes auto-pr-branch after merging
+          draft: false  # Ensure PR is ready for review
 
-  auto-merge:
-    runs-on: ubuntu-latest
-    needs: create-pull-request
-    if: needs.create-pull-request.outputs.pr_number != ''
-    steps:
-      - name: Enable Auto-Merge
-        uses: peter-evans/enable-pull-request-automerge@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ needs.create-pull-request.outputs.pr_number }}
-          merge-method: squash
-
-      - name: Check PR Status
-        run: gh pr view ${{ needs.create-pull-request.outputs.pr_number }} --json mergeable
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Merge Pull Request Manually (if auto-merge fails)
-        if: failure()
-        run: gh pr merge ${{ needs.create-pull-request.outputs.pr_number }} --squash --auto
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
