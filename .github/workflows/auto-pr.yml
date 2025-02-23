@@ -31,6 +31,8 @@ jobs:
           branch: ${{ github.ref_name }}
           title: "Merge ${{ github.ref_name }} into main"
           body: "This pull request has been automatically generated to merge changes from the feature branch into main."
+          delete-branch: true  # Deletes the branch after merging to keep repo clean
+          draft: false  # Ensure PR is not in draft mode
 
   auto-merge:
     runs-on: ubuntu-latest
@@ -43,3 +45,14 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           pull-request-number: ${{ needs.create-pull-request.outputs.pr_number }}
           merge-method: squash
+
+      - name: Check PR Status
+        run: gh pr view ${{ needs.create-pull-request.outputs.pr_number }} --json mergeable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge Pull Request Manually (if auto-merge fails)
+        if: failure()
+        run: gh pr merge ${{ needs.create-pull-request.outputs.pr_number }} --squash --auto
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
