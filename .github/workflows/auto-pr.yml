@@ -16,7 +16,7 @@ jobs:
   create-pull-request:
     runs-on: ubuntu-latest
     outputs:
-      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}  # Use direct step reference
+      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v3
@@ -57,37 +57,39 @@ jobs:
           fi
 
       - name: Create Pull Request
-        id: create_pr  # Step ID must match reference
+        id: create_pr
         uses: peter-evans/create-pull-request@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # Change back to GITHUB_TOKEN if needed
+          token: ${{ secrets.APPROVER_DEMO }}
           base: main
           branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
           body: "This PR is automatically created to update main via an intermediate branch."
-          delete-branch: true  # Ensure PR branch is deleted after merge
+          delete-branch: false
           draft: false
 
       - name: Debug PR Number
-        run: 'echo "PR Number: ${{ steps.create_pr.outputs.pull-request-number }}"'  # Direct step reference
+        run: 'echo "PR Number: ${{ steps.create_pr.outputs.pull-request-number }}"'
 
   approve-pr:
     runs-on: ubuntu-latest
     needs: create-pull-request
+    if: ${{ needs.create-pull-request.outputs.pr_number != '' && needs.create-pull-request.outputs.pr_number != null }}
     steps:
       - name: Approve Pull Request
         uses: juliangruber/approve-pull-request-action@v1
         with:
           github-token: ${{ secrets.APPROVER_DEMO }}
-          number: ${{ needs.create-pull-request.outputs.pr_number }}  # Ensure correct reference
+          number: ${{ needs.create-pull-request.outputs.pr_number }}
 
   merge-pr:
     runs-on: ubuntu-latest
     needs: approve-pr
+    if: ${{ needs.create-pull-request.outputs.pr_number != '' && needs.create-pull-request.outputs.pr_number != null }}
     steps:
       - name: Merge Pull Request
         uses: juliangruber/merge-pull-request-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          number: ${{ needs.create-pull-request.outputs.pr_number }}  # Ensure correct reference
+          github-token: ${{ secrets.APPROVER_DEMO }}
+          number: ${{ needs.create-pull-request.outputs.pr_number }}
           method: squash
