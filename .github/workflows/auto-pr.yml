@@ -15,12 +15,12 @@ jobs:
   create-pull-request:
     runs-on: ubuntu-latest
     outputs:
-      pr_number: ${{ steps.create_pr.outputs.pull-request-number || '0' }}  # Prevent empty PR number
+      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
     steps:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          ref: main
+          ref: main  # Ensuring it checks out the main branch
 
       - name: Create a new branch for the PR
         run: |
@@ -35,35 +35,31 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: auto-pr-branch
+          branch: auto-pr-branch  # Using the newly created branch
           title: "Auto PR: Sync main changes"
           body: "This PR is automatically created to update main via an intermediate branch."
-          delete-branch: true
-          draft: false
-
-      - name: Debug PR Number Output
-        run: |
-          echo "Pull Request Number: ${{ steps.create_pr.outputs.pull-request-number }}"
+          delete-branch: true  # Deletes auto-pr-branch after merging
+          draft: false  # Ensure PR is ready for review
 
   approve-pr:
-    runs-on: ubuntu-latest
     needs: create-pull-request
-    if: needs.create-pull-request.outputs.pr_number != '0'  # Skip if no PR created
+    runs-on: ubuntu-latest
+    if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Approve Pull Request
         uses: juliangruber/approve-pull-request-action@v1
         with:
-          github-token: ${{ secrets.APPROVER_DEMO }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
 
   merge-pr:
-    runs-on: ubuntu-latest
     needs: approve-pr
-    if: needs.create-pull-request.outputs.pr_number != '0'
+    runs-on: ubuntu-latest
+    if: needs.create-pull-request.outputs.pr_number != ''
     steps:
       - name: Merge Pull Request
         uses: juliangruber/merge-pull-request-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
-          method: squash
+          method: squash  # Uses squash merging to maintain a clean history
