@@ -1,4 +1,4 @@
-name: Create Pull Request
+name: Create and Merge Pull Request
 
 permissions:
   contents: write
@@ -14,6 +14,8 @@ on:
 jobs:
   create-pull-request:
     runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
     steps:
       - name: Checkout feature branch
         uses: actions/checkout@v3
@@ -21,6 +23,7 @@ jobs:
           ref: ${{ github.ref_name }}
 
       - name: Create Pull Request
+        id: create_pr
         uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -28,3 +31,15 @@ jobs:
           branch: ${{ github.ref_name }}
           title: "Merge ${{ github.ref_name }} into main"
           body: "This pull request has been automatically generated to merge changes from the feature branch into main."
+
+  auto-merge:
+    runs-on: ubuntu-latest
+    needs: create-pull-request
+    if: needs.create-pull-request.outputs.pr_number != ''
+    steps:
+      - name: Enable Auto-Merge
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ needs.create-pull-request.outputs.pr_number }}
+          merge-method: squash
