@@ -43,6 +43,18 @@ jobs:
             git push origin auto-pr-branch
           fi
 
+      - name: Ensure changes exist (Dummy Commit if needed)
+        run: |
+          if git diff --quiet origin/main..auto-pr-branch; then
+            echo "No changes detected, making a dummy commit."
+            echo "Triggering PR - $(date)" >> .pr-trigger-file
+            git add .pr-trigger-file
+            git commit -m "Trigger PR - $(date)"
+            git push origin auto-pr-branch
+          else
+            echo "Changes detected, proceeding with PR creation."
+          fi
+
       - name: Create Pull Request
         id: create_pr
         uses: peter-evans/create-pull-request@v4
