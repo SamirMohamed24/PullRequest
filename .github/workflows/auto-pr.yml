@@ -44,7 +44,7 @@ jobs:
             git push origin auto-pr-branch
           fi
 
-      - name: Ensure changes exist (Force Dummy Commit)
+      - name: Ensure changes exist (Dummy Commit)
         run: |
           echo "Triggering PR - $(date)" >> .pr-trigger-file
           git add .pr-trigger-file
@@ -63,8 +63,12 @@ jobs:
           delete-branch: false
           draft: false
 
+      - name: Capture PR Number
+        run: |
+          echo "PR_NUMBER=${{ steps.create_pr.outputs.pull-request-number }}" >> $GITHUB_ENV
+
       - name: Debug PR Number
-        run: 'echo "PR Number is: ${{ steps.create_pr.outputs.pull-request-number }}"'
+        run: 'echo "PR Number is: $PR_NUMBER"'
 
   approve-pr:
     runs-on: ubuntu-latest
@@ -72,9 +76,9 @@ jobs:
     if: ${{ needs.create-pull-request.outputs.pr_number != '' && needs.create-pull-request.outputs.pr_number != null }}
     steps:
       - name: Approve Pull Request
-        uses: juliangruber/approve-pull-request-action@v1 
+        uses: juliangruber/approve-pull-request-action@v1
         with:
-          github-token: ${{ secrets.APPROVER_DEMO }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ needs.create-pull-request.outputs.pr_number }}
 
   merge-pr:
