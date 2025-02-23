@@ -59,7 +59,7 @@ jobs:
         id: create_pr
         uses: peter-evans/create-pull-request@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.APPROVER_DEMO }} 
           base: main
           branch: auto-pr-branch
           title: "Auto PR: Sync main changes"
@@ -86,6 +86,6 @@ jobs:
       - name: Merge Pull Request
         uses: juliangruber/merge-pull-request-action@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.APPROVER_DEMO }} 
           number: ${{ needs.create-pull-request.outputs.pr_number }}
           method: squash
