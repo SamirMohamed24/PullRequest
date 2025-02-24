@@ -1,4 +1,4 @@
-name: Auto Create & Merge PR
+name: Auto Commit & Push Changes
 
 on:
   push:
@@ -6,66 +6,34 @@ on:
       - main
 
 jobs:
-  createPR:
+  commit-and-push:
     runs-on: ubuntu-latest
-    outputs:
-      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
 
-      - name: Create a new feature branch
-        run: |
-          BRANCH_NAME="auto-pr-$(date +%s)"
-          git checkout -b "$BRANCH_NAME"
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-
-      # Example change (Modify or replace this step with your actual changes)
       - name: Make changes
         run: |
           echo "Automated change at $(date)" >> auto-change.txt
           git add auto-change.txt
-          git commit -m "Automated commit: Adding auto-change.txt"
 
-      - name: Push changes
-        run: git push origin ${{ env.BRANCH_NAME }}
+      - name: Check for changes
+        id: has-changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Changes detected."
+            echo "::set-output name=has-changes::true"
+          else
+            echo "No changes detected."
+            echo "::set-output name=has-changes::false"
+          fi
 
-      - name: Create Pull Request
-        id: create_pr
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.APPROVER_DEMO }}  # Using PAT instead of GITHUB_TOKEN
-          base: main
-          branch: ${{ env.BRANCH_NAME }}
-          title: 'Automated PR: Sync main changes'
-          body: 'This PR is automatically created by GitHub Actions.'
-          delete-branch: false
-          draft: false
-
-  approvePR:
-    runs-on: ubuntu-latest
-    needs: createPR
-    if: ${{ needs.createPR.outputs.pr_number != '' && needs.createPR.outputs.pr_number != null }}
-    steps:
-      - name: Approve Pull Request
-        uses: juliangruber/approve-pull-request-action@v1
-        with:
-          github-token: ${{ secrets.APPROVER_DEMO }}  # Using PAT
-          number: ${{ needs.createPR.outputs.pr_number }}
-
-  mergePR:
-    runs-on: ubuntu-latest
-    needs: approvePR
-    if: ${{ needs.createPR.outputs.pr_number != '' && needs.createPR.outputs.pr_number != null }}
-    steps:
-      - name: Merge Pull Request
-        uses: juliangruber/merge-pull-request-action@v1
-        with:
-          github-token: ${{ secrets.APPROVER_DEMO }}  # Using PAT
-          number: ${{ needs.createPR.outputs.pr_number }}
-          method: squash
+      - name: Commit and Push Changes
+        if: steps.has-changes.outputs.has-changes == 'true'
+        run: |
+          git config --local user.email "github-actions@github.com"
+          git config --local user.name "github-actions"
+          git commit -m "Updated mkdocs files [Automated Run]" || echo "No changes to commit"
+          git pull --rebase
+          git push
