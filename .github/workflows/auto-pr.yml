@@ -1,5 +1,8 @@
 name: Auto Commit & Push Changes
 
+permissions:
+  contents: write
+  actions: write
 on:
   push:
     branches:
