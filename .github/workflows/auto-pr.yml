@@ -44,10 +44,10 @@ jobs:
           git config --local user.name "github-actions"
           # Commit changes if there are any changes
           git commit -m "Updated mkdocs files [Automated Run]" || echo "No changes to commit"
-          # Pull latest changes with rebase to avoid conflicts
-          git pull --rebase
-          # Push the new branch to the origin
-          git push origin "$BRANCH_NAME"
+          # Pull latest changes from main with rebase to avoid conflicts
+          git pull --rebase origin main
+          # Push the new branch to origin with upstream tracking set
+          git push --set-upstream origin "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
       - name: Create Pull Request
